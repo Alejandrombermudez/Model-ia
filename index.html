@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Identificador de Especies Arbóreas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-slate-100 min-h-screen font-sans">
+
+  <!-- Header -->
+  <header class="bg-green-900 text-white shadow-lg">
+    <div class="max-w-5xl mx-auto px-6 py-5 flex items-center gap-3">
+      <span class="text-4xl">🌳</span>
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Identificador de Especies Arbóreas</h1>
+        <p class="text-green-300 text-sm mt-0.5">Análisis multiespectral con inteligencia artificial · Sin envío de datos</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 py-8 space-y-6">
+
+    <!-- Selector de modelo -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="step-badge">MODELO</span>
+        <h2 class="text-lg font-semibold text-slate-800">Selecciona el modelo</h2>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="flex-1 rounded-xl border border-slate-200 p-3">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-semibold text-sm text-slate-700">🧠 EfficientNet 5-bandas</span>
+            <span id="status-eff" class="text-xs text-amber-600">⏳ Cargando…</span>
+          </div>
+          <p class="text-xs text-slate-400">Experto en <strong>Abarco costeño</strong> y <strong>Yopo</strong></p>
+        </div>
+        <div class="flex-1 rounded-xl border border-slate-200 p-3">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-semibold text-sm text-slate-700">🤖 ResNet50 Adapter</span>
+            <span id="status-res" class="text-xs text-amber-600">⏳ Cargando…</span>
+          </div>
+          <p class="text-xs text-slate-400">Experto en <strong>Balso</strong> y <strong>Yarumo</strong></p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-400 mt-2">Ambos modelos corren simultáneamente y se combina su resultado mediante arbitraje de expertos.</p>
+    </section>
+
+    <!-- Paso 1: Carga de imágenes -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="step-badge">PASO 1</span>
+        <h2 class="text-lg font-semibold text-slate-800">Carga las imágenes espectrales</h2>
+      </div>
+      <p class="text-slate-500 text-sm mb-6">
+        Sube <strong>una imagen por canal</strong>. Las 5 deben provenir del mismo árbol y tener
+        las mismas dimensiones. Puedes hacer clic en cada zona o arrastrar las imágenes.
+      </p>
+
+      <!-- Grid de canales (generado por JS) -->
+      <div id="channel-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"></div>
+
+      <!-- Barra de validación -->
+      <div id="validation-bar" class="mt-5 rounded-xl p-3 text-sm hidden"></div>
+    </section>
+
+    <!-- Botón identificar -->
+    <div class="flex justify-center">
+      <button id="btn-identify"
+        class="bg-green-700 hover:bg-green-800 disabled:bg-slate-300 disabled:cursor-not-allowed
+               text-white font-bold py-3 px-12 rounded-full text-base transition-all shadow-md
+               flex items-center gap-2"
+        disabled>
+        <span id="btn-icon">🔍</span>
+        <span id="btn-text">Identificar especie</span>
+      </button>
+    </div>
+
+    <!-- Resultado -->
+    <section id="results-section" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="step-badge">RESULTADO</span>
+        <h2 class="text-lg font-semibold text-slate-800">Identificación</h2>
+      </div>
+      <div id="result-content"></div>
+    </section>
+
+  </main>
+
+  <footer class="text-center text-slate-400 text-xs py-6">
+    Procesamiento local en el navegador · Los datos no salen de tu dispositivo
+  </footer>
+
+  <!-- Soporte TIF 16-bit (bandas multiespectrales de dron) -->
+  <script src="https://cdn.jsdelivr.net/npm/geotiff@2.0.7/dist-browser/geotiff.js"></script>
+  <!-- ONNX Runtime Web para inferencia local -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/ort.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
