@@ -3,99 +3,185 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Identificador de Especies Arbóreas</title>
+  <title>Identificación de Especies · Amazonia Emprende</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#0d7377',
+              light:   '#14b8a6',
+              dark:    '#0a5c5f',
+              50:      '#f0fdfa',
+              100:     '#ccfbf1',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-slate-100 min-h-screen font-sans">
 
-  <!-- Header -->
-  <header class="bg-green-900 text-white shadow-lg">
-    <div class="max-w-5xl mx-auto px-6 py-5 flex items-center gap-3">
-      <span class="text-4xl">🌳</span>
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight">Identificador de Especies Arbóreas</h1>
-        <p class="text-green-300 text-sm mt-0.5">Análisis multiespectral con inteligencia artificial · Sin envío de datos</p>
+<body class="font-sans antialiased min-h-screen bg-gradient-to-br from-stone-50 via-primary-50 to-stone-100">
+
+  <!-- ── HEADER ─────────────────────────────────────────────── -->
+  <header class="bg-white shadow-md border-b border-stone-200 sticky top-0 z-20">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
+
+      <!-- Logo / marca -->
+      <div class="flex items-center gap-3 flex-1">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+             style="background:#0d7377">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0
+                 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-stone-800 leading-tight">Identificación de Especies</h1>
+          <p class="text-xs text-stone-400 hidden sm:block">Módulo RAS · Amazonia Emprende</p>
+        </div>
+      </div>
+
+      <!-- Badge de sistema -->
+      <div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-50 border border-primary-100">
+        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+        <span class="text-xs font-medium text-primary">IA local · sin envío de datos</span>
       </div>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-6 py-8 space-y-6">
+  <!-- ── MAIN ───────────────────────────────────────────────── -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
 
-    <!-- Selector de modelo -->
-    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="step-badge">MODELO</span>
-        <h2 class="text-lg font-semibold text-slate-800">Selecciona el modelo</h2>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-3">
-        <div class="flex-1 rounded-xl border border-slate-200 p-3">
-          <div class="flex items-center justify-between mb-1">
-            <span class="font-semibold text-sm text-slate-700">🧠 EfficientNet 5-bandas</span>
-            <span id="status-eff" class="text-xs text-amber-600">⏳ Cargando…</span>
-          </div>
-          <p class="text-xs text-slate-400">Experto en <strong>Abarco costeño</strong> y <strong>Yopo</strong></p>
+    <!-- Modelos de IA -->
+    <section class="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:#0d7377">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-white" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707
+                 m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0
+                 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
         </div>
-        <div class="flex-1 rounded-xl border border-slate-200 p-3">
-          <div class="flex items-center justify-between mb-1">
-            <span class="font-semibold text-sm text-slate-700">🤖 ResNet50 Adapter</span>
-            <span id="status-res" class="text-xs text-amber-600">⏳ Cargando…</span>
+        <h2 class="text-sm font-semibold text-stone-700">Modelos de inteligencia artificial</h2>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- EfficientNet -->
+        <div class="flex items-center justify-between p-3 rounded-xl border border-stone-200 bg-stone-50">
+          <div>
+            <p class="text-sm font-semibold text-stone-700">EfficientNet 5-bandas</p>
+            <p class="text-xs text-stone-400 mt-0.5">
+              Experto en
+              <span class="font-medium text-stone-600">Abarco costeño</span> y
+              <span class="font-medium text-stone-600">Yopo</span>
+            </p>
           </div>
-          <p class="text-xs text-slate-400">Experto en <strong>Balso</strong> y <strong>Yarumo</strong></p>
+          <span id="status-eff" class="model-status text-xs font-medium px-2 py-1 rounded-full
+                bg-amber-50 text-amber-600 border border-amber-200">
+            Cargando…
+          </span>
+        </div>
+
+        <!-- ResNet -->
+        <div class="flex items-center justify-between p-3 rounded-xl border border-stone-200 bg-stone-50">
+          <div>
+            <p class="text-sm font-semibold text-stone-700">ResNet50 Adapter</p>
+            <p class="text-xs text-stone-400 mt-0.5">
+              Experto en
+              <span class="font-medium text-stone-600">Balso</span> y
+              <span class="font-medium text-stone-600">Yarumo</span>
+            </p>
+          </div>
+          <span id="status-res" class="model-status text-xs font-medium px-2 py-1 rounded-full
+                bg-amber-50 text-amber-600 border border-amber-200">
+            Cargando…
+          </span>
         </div>
       </div>
-      <p class="text-xs text-slate-400 mt-2">Ambos modelos corren simultáneamente y se combina su resultado mediante arbitraje de expertos.</p>
+
+      <p class="text-xs text-stone-400 mt-3 flex items-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Ambos modelos se ejecutan simultáneamente y combinan su resultado mediante arbitraje de expertos.
+      </p>
     </section>
 
-    <!-- Paso 1: Carga de imágenes -->
-    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+    <!-- Carga de imágenes -->
+    <section class="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
       <div class="flex items-center gap-2 mb-1">
         <span class="step-badge">PASO 1</span>
-        <h2 class="text-lg font-semibold text-slate-800">Carga las imágenes espectrales</h2>
+        <h2 class="text-sm font-semibold text-stone-700">Carga las imágenes espectrales</h2>
       </div>
-      <p class="text-slate-500 text-sm mb-6">
-        Sube <strong>una imagen por canal</strong>. Las 5 deben provenir del mismo árbol y tener
-        las mismas dimensiones. Puedes hacer clic en cada zona o arrastrar las imágenes.
+      <p class="text-xs text-stone-400 mb-5">
+        Sube una imagen por cada banda espectral. Las 5 deben provenir del mismo árbol y tener
+        las mismas dimensiones. Acepta archivos <strong class="text-stone-500">.TIF</strong> (recomendado) y .JPG.
       </p>
 
-      <!-- Grid de canales (generado por JS) -->
-      <div id="channel-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"></div>
+      <div id="channel-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3"></div>
 
-      <!-- Barra de validación -->
-      <div id="validation-bar" class="mt-5 rounded-xl p-3 text-sm hidden"></div>
+      <div id="validation-bar" class="mt-4 rounded-xl p-3 text-xs hidden"></div>
     </section>
 
     <!-- Botón identificar -->
     <div class="flex justify-center">
       <button id="btn-identify"
-        class="bg-green-700 hover:bg-green-800 disabled:bg-slate-300 disabled:cursor-not-allowed
-               text-white font-bold py-3 px-12 rounded-full text-base transition-all shadow-md
-               flex items-center gap-2"
+        class="inline-flex items-center gap-2.5 px-8 py-3 rounded-xl font-semibold text-sm
+               text-white transition-all shadow-sm
+               disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+        style="background:#0d7377"
+        onmouseover="if(!this.disabled) this.style.background='#0a5c5f'"
+        onmouseout="if(!this.disabled) this.style.background='#0d7377'"
         disabled>
-        <span id="btn-icon">🔍</span>
+        <span id="btn-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </span>
         <span id="btn-text">Identificar especie</span>
       </button>
     </div>
 
     <!-- Resultado -->
-    <section id="results-section" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+    <section id="results-section"
+      class="hidden bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
       <div class="flex items-center gap-2 mb-4">
         <span class="step-badge">RESULTADO</span>
-        <h2 class="text-lg font-semibold text-slate-800">Identificación</h2>
+        <h2 class="text-sm font-semibold text-stone-700">Identificación de especie</h2>
       </div>
       <div id="result-content"></div>
     </section>
 
   </main>
 
-  <footer class="text-center text-slate-400 text-xs py-6">
-    Procesamiento local en el navegador · Los datos no salen de tu dispositivo
+  <!-- ── FOOTER ─────────────────────────────────────────────── -->
+  <footer class="text-center text-stone-400 text-xs py-8">
+    © 2025 Amazonia Emprende · Módulo RAS · Procesamiento local sin envío de datos
   </footer>
 
-  <!-- Soporte TIF 16-bit (bandas multiespectrales de dron) -->
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/geotiff@2.0.7/dist-browser/geotiff.js"></script>
-  <!-- ONNX Runtime Web para inferencia local -->
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/ort.min.js"></script>
   <script src="app.js"></script>
+
 </body>
 </html>

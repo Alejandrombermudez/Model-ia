@@ -59,7 +59,7 @@ function renderGrid() {
     card.innerHTML = `
       <div class="flex items-center gap-1.5 w-full">
         <span class="channel-badge" style="background:${ch.color}">${ch.label}</span>
-        <span class="text-xs text-slate-500 font-medium leading-tight">${ch.desc}</span>
+        <span class="text-xs text-stone-500 font-medium leading-tight">${ch.desc}</span>
       </div>
       <div class="upload-zone w-full" id="zone-${ch.id}"
            tabindex="0" role="button"
@@ -177,16 +177,17 @@ function validate() {
   bar.className = 'mt-5 rounded-xl p-3 text-sm';
 
   if (n < CHANNELS.length) {
-    const miss = CHANNELS.filter(ch => !state.files[ch.id]).map(ch => `<strong>${ch.label}</strong>`).join(', ');
-    bar.classList.add('bg-amber-50', 'border', 'border-amber-200', 'text-amber-800');
-    bar.innerHTML = `Cargadas ${n} de ${CHANNELS.length} — Faltan: ${miss}`;
+    const miss = CHANNELS.filter(ch => !state.files[ch.id]).map(ch =>
+      `<span class="font-semibold">${ch.label}</span>`).join(', ');
+    bar.className = 'mt-4 rounded-xl p-3 text-xs bg-amber-50 border border-amber-200 text-amber-900';
+    bar.innerHTML = `<span class="font-semibold">${n}/${CHANNELS.length}</span> bandas cargadas — Faltan: ${miss}`;
     btn.disabled = true;
     return;
   }
 
   if (nd < CHANNELS.length) {
-    bar.classList.add('bg-amber-50', 'border', 'border-amber-200', 'text-amber-800');
-    bar.innerHTML = 'Leyendo dimensiones...';
+    bar.className = 'mt-4 rounded-xl p-3 text-xs bg-amber-50 border border-amber-200 text-amber-900';
+    bar.innerHTML = 'Leyendo dimensiones…';
     btn.disabled = true;
     return;
   }
@@ -201,19 +202,19 @@ function validate() {
       const match = d && d.w === refW && d.h === refH;
       return `<div class="text-center">
         <div class="font-bold" style="color:${ch.color}">${ch.label}</div>
-        <div>${d ? `${d.w}x${d.h}` : '-'} ${match ? 'OK' : '!'}</div>
+        <div class="${match ? 'text-stone-600' : 'text-red-600 font-semibold'}">${d ? `${d.w}×${d.h}` : '—'}</div>
       </div>`;
     }).join('');
-    bar.classList.add('bg-red-50', 'border', 'border-red-200', 'text-red-700');
-    bar.innerHTML = `<div class="font-semibold mb-2">Dimensiones diferentes entre bandas</div>
-      <div class="grid grid-cols-5 gap-2 text-xs">${table}</div>
-      <div class="text-xs mt-2 text-red-500">Verifica que todas las bandas sean del mismo vuelo.</div>`;
+    bar.className = 'mt-4 rounded-xl p-3 text-xs bg-red-50 border border-red-200 text-red-700';
+    bar.innerHTML = `<div class="font-semibold mb-2">Las bandas tienen dimensiones distintas</div>
+      <div class="grid grid-cols-5 gap-2">${table}</div>
+      <div class="mt-2 text-red-500">Verifica que todas las bandas sean del mismo vuelo.</div>`;
     btn.disabled = true;
     return;
   }
 
-  bar.classList.add('bg-green-50', 'border', 'border-green-200', 'text-green-700');
-  bar.innerHTML = `5 bandas cargadas - Dimensiones: ${refW} x ${refH} px - Listo para identificar`;
+  bar.className = 'mt-4 rounded-xl p-3 text-xs bg-emerald-50 border border-emerald-200 text-emerald-700';
+  bar.innerHTML = `<span class="font-semibold">5 bandas cargadas</span> · Dimensiones: ${refW} × ${refH} px · Listo para identificar`;
   btn.disabled = false;
 }
 
@@ -221,9 +222,14 @@ function validate() {
 //  Carga de sesiones ONNX (en paralelo al inicio)
 // ================================================================
 async function preloadModels() {
-  const setStatus = (key, text, color) => {
+  const setStatus = (key, text, state) => {
     const el = document.getElementById(`status-${key}`);
-    if (el) { el.textContent = text; el.className = `text-xs ${color}`; }
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'model-status text-xs font-medium px-2 py-1 rounded-full border ' +
+      (state === 'ready' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+       state === 'error' ? 'bg-red-50 text-red-600 border-red-200' :
+                          'bg-amber-50 text-amber-600 border-amber-200');
   };
 
   const loadOne = async (key) => {
@@ -233,11 +239,11 @@ async function preloadModels() {
         executionProviders: ['wasm']
       });
       state.modelsReady[key] = true;
-      setStatus(key, 'Listo', 'text-green-600');
+      setStatus(key, '✓ Listo', 'ready');
       console.log(`Modelo ${key} cargado. Input: ${state.sessions[key].inputNames}`);
     } catch (e) {
       state.modelsReady[key] = false;
-      setStatus(key, 'No encontrado', 'text-red-500');
+      setStatus(key, 'No encontrado', 'error');
       console.warn(`Modelo ${key} no disponible:`, e.message);
     }
   };
@@ -455,67 +461,87 @@ function showResults(probEff, probRes) {
     .map((name, i) => ({ name, prob: mainP[i] ?? 0 }))
     .sort((a, b) => b.prob - a.prob)
     .map((p, i) => {
-      const medal = ['&#127871;','&#127872;','&#127873;'][i] ?? '';
-      const fill  = arb.winner === p.name ? arb.color : '#cbd5e1';
+      const isWinner = arb.winner === p.name;
+      const fill = isWinner ? arb.color : '#d6d3d1';  /* stone-300 */
       return `<div>
-        <div class="flex justify-between text-sm mb-1">
-          <span class="font-medium text-slate-700">${medal} ${p.name}</span>
-          <span class="text-slate-500 tabular-nums">${(p.prob * 100).toFixed(1)}%</span>
+        <div class="flex justify-between text-xs mb-1.5">
+          <span class="font-medium text-stone-700">${p.name}</span>
+          <span class="tabular-nums ${isWinner ? 'font-bold' : 'text-stone-400'}"
+                style="${isWinner ? `color:${arb.color}` : ''}">${(p.prob * 100).toFixed(1)}%</span>
         </div>
         <div class="prob-bar-track">
           <div class="prob-bar-fill" style="width:0%;background:${fill}"
-               data-target="${(p.prob*100).toFixed(1)}%"></div>
+               data-target="${(p.prob * 100).toFixed(1)}%"></div>
         </div>
       </div>`;
     }).join('');
 
-  const modelBox = (label, icon, lbl, prob) => !lbl
-    ? `<div class="flex-1 rounded-xl border border-slate-200 p-3 text-center">
-         <div class="text-xs font-semibold text-slate-400 mb-1">${icon} ${label}</div>
-         <div class="text-slate-300 text-sm">No disponible</div>
+  const modelBox = (label, lbl, prob) => !lbl
+    ? `<div class="flex-1 rounded-xl border border-stone-200 bg-stone-50 p-3 text-center">
+         <p class="text-xs font-semibold text-stone-400 mb-1">${label}</p>
+         <p class="text-stone-300 text-xs">No disponible</p>
        </div>`
-    : `<div class="flex-1 rounded-xl border border-slate-200 p-3 text-center">
-         <div class="text-xs font-semibold text-slate-500 mb-1">${icon} ${label}</div>
-         <div class="font-bold text-slate-700">${lbl}</div>
-         <div class="text-xs text-slate-400">${(prob * 100).toFixed(1)}%</div>
+    : `<div class="flex-1 rounded-xl border border-stone-200 bg-stone-50 p-3 text-center">
+         <p class="text-xs font-semibold text-stone-400 mb-1">${label}</p>
+         <p class="font-bold text-stone-800 text-sm">${lbl}</p>
+         <p class="text-xs text-stone-400 mt-0.5">${(prob * 100).toFixed(1)}%</p>
        </div>`;
 
+  /* Color semántico según tipo de resultado */
+  const resultBg    = isConf ? '#fffbeb' : arb.color === '#2E7D32' || arb.color === '#43A047'
+                      ? '#f0fdf4' : '#eff6ff';
+  const resultBorder = isConf ? '#fde68a' : arb.color === '#2E7D32' || arb.color === '#43A047'
+                      ? '#bbf7d0' : '#bfdbfe';
+
   content.innerHTML = `
-    <div class="fade-in space-y-5">
-      <div class="flex items-center gap-4 p-4 rounded-xl"
-           style="background:${arb.color}12;border:1.5px solid ${arb.color}40">
-        <div class="text-5xl select-none">${isConf ? '&#9888;&#65039;' : '&#127794;'}</div>
-        <div class="flex-1">
-          <div class="text-2xl font-bold" style="color:${arb.color}">${arb.winner}</div>
-          <div class="text-xs text-slate-500 mt-1">${arb.reason}</div>
+    <div class="fade-in space-y-4">
+
+      <!-- Resultado principal -->
+      <div class="flex items-center gap-4 p-4 rounded-xl border"
+           style="background:${resultBg}; border-color:${resultBorder}">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+             style="background:${arb.color}20">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor" style="color:${arb.color}">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714
+                 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xl font-bold truncate" style="color:${arb.color}">${arb.winner}</p>
+          <p class="text-xs text-stone-500 mt-0.5">${arb.reason}</p>
         </div>
       </div>
 
+      <!-- Resultado por modelo -->
       <div>
-        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Por modelo</h3>
-        <div class="flex gap-3">
-          ${modelBox('EfficientNet', '&#129504;', arb.lEff, arb.pEff)}
-          ${modelBox('ResNet50', '&#129302;', arb.lRes, arb.pRes)}
+        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Por modelo</p>
+        <div class="flex gap-2">
+          ${modelBox('EfficientNet', arb.lEff, arb.pEff)}
+          ${modelBox('ResNet50', arb.lRes, arb.pRes)}
         </div>
       </div>
 
+      <!-- Barras de probabilidad -->
       <div class="space-y-2.5">
-        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Distribucion de probabilidades
-          <span class="font-normal normal-case">(${probEff ? 'EfficientNet' : 'ResNet'})</span>
-        </h3>
+        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider">
+          Probabilidades · <span class="font-normal normal-case text-stone-400">${probEff ? 'EfficientNet' : 'ResNet'}</span>
+        </p>
         ${bars}
       </div>
 
-      ${isConf ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-700 text-sm">
-        <strong>Conflicto entre expertos:</strong> EfficientNet predice <em>${arb.lEff}</em>
-        y ResNet predice <em>${arb.lRes}</em>. Se recomienda validacion manual.
+      ${isConf ? `
+      <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+        <span class="font-semibold">Conflicto entre expertos:</span>
+        EfficientNet predice <em>${arb.lEff}</em> y ResNet predice <em>${arb.lRes}</em>.
+        Se recomienda validación en campo.
       </div>` : ''}
 
-      <div class="text-center pt-2">
+      <div class="pt-1 text-center">
         <button onclick="resetAll()"
-          class="text-sm text-green-700 hover:text-green-900 underline underline-offset-2 transition-colors">
-          Nueva identificacion
+          class="text-xs font-medium underline underline-offset-2 transition-colors text-stone-400 hover:text-stone-700">
+          Nueva identificación
         </button>
       </div>
     </div>`;
@@ -536,8 +562,8 @@ function showError(message) {
   const sec = document.getElementById('results-section');
   document.getElementById('result-content').innerHTML = `
     <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 fade-in">
-      <div class="font-semibold mb-1">Error durante la identificacion</div>
-      <div class="text-sm font-mono break-all">${message}</div>
+      <p class="font-semibold text-sm mb-1">Error durante la identificación</p>
+      <p class="text-xs font-mono break-all text-red-600">${message}</p>
     </div>`;
   sec.classList.remove('hidden');
 }
