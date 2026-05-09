@@ -17,10 +17,10 @@ const MODEL_PATHS = {
   res: 'https://huggingface.co/AlejandroBermudez123/especies-arboreas/resolve/main/resnet.onnx',
 };
 
-// Canales — ORDEN CRÍTICO: B, G, R, RE, NIR
-// Fuente: prepare_tensor() → np.stack([b, g, r, re, nir], axis=-1)
+// Canales — ORDEN CRÍTICO: B(del RGB), G, R, RE, NIR
+// El canal B proviene de la imagen RGB; el modelo recibe [B, G, R, RE, NIR]
 const CHANNELS = [
-  { id: 'b',   label: 'B',   desc: 'Azul',       color: '#3b82f6', ext: 'MS_B'   },
+  { id: 'rgb', label: 'RGB', desc: 'Color RGB',   color: '#3b82f6', ext: 'RGB'    },
   { id: 'g',   label: 'G',   desc: 'Verde',       color: '#22c55e', ext: 'MS_G'   },
   { id: 'r',   label: 'R',   desc: 'Rojo',        color: '#ef4444', ext: 'MS_R'   },
   { id: 're',  label: 'RE',  desc: 'Red Edge',    color: '#f97316', ext: 'MS_RE'  },
@@ -171,7 +171,6 @@ function validate() {
   const bar  = document.getElementById('validation-bar');
   const btn  = document.getElementById('btn-identify');
   const n    = Object.keys(state.files).length;
-  const nd   = Object.keys(state.dims).length;
 
   bar.classList.remove('hidden');
   bar.className = 'mt-5 rounded-xl p-3 text-sm';
@@ -185,36 +184,48 @@ function validate() {
     return;
   }
 
-  if (nd < CHANNELS.length) {
+  // Solo G, R, RE, NIR deben coincidir en resolución; RGB puede ser diferente
+  const msChs = CHANNELS.filter(ch => ch.id !== 'rgb');
+  const allDimsReady = CHANNELS.every(ch => state.dims[ch.id]);
+
+  if (!allDimsReady) {
     bar.className = 'mt-4 rounded-xl p-3 text-xs bg-amber-50 border border-amber-200 text-amber-900';
     bar.innerHTML = 'Leyendo dimensiones…';
     btn.disabled = true;
     return;
   }
 
-  const dimVals = Object.values(state.dims);
-  const refW = dimVals[0].w, refH = dimVals[0].h;
-  const ok   = dimVals.every(d => d.w === refW && d.h === refH);
+  const msDimVals = msChs.map(ch => state.dims[ch.id]);
+  const refW = msDimVals[0].w, refH = msDimVals[0].h;
+  const msOk = msDimVals.every(d => d.w === refW && d.h === refH);
 
-  if (!ok) {
+  if (!msOk) {
     const table = CHANNELS.map(ch => {
       const d = state.dims[ch.id];
-      const match = d && d.w === refW && d.h === refH;
+      const isRgb = ch.id === 'rgb';
+      const match = isRgb || (d && d.w === refW && d.h === refH);
       return `<div class="text-center">
         <div class="font-bold" style="color:${ch.color}">${ch.label}</div>
         <div class="${match ? 'text-stone-600' : 'text-red-600 font-semibold'}">${d ? `${d.w}×${d.h}` : '—'}</div>
       </div>`;
     }).join('');
     bar.className = 'mt-4 rounded-xl p-3 text-xs bg-red-50 border border-red-200 text-red-700';
-    bar.innerHTML = `<div class="font-semibold mb-2">Las bandas tienen dimensiones distintas</div>
+    bar.innerHTML = `<div class="font-semibold mb-2">Las bandas MS tienen dimensiones distintas</div>
       <div class="grid grid-cols-5 gap-2">${table}</div>
-      <div class="mt-2 text-red-500">Verifica que todas las bandas sean del mismo vuelo.</div>`;
+      <div class="mt-2 text-red-500">Verifica que G, R, RE y NIR sean del mismo vuelo.</div>`;
     btn.disabled = true;
     return;
   }
 
+  const rgbDims = state.dims['rgb'];
+  const rgbDiff = rgbDims.w !== refW || rgbDims.h !== refH;
+
   bar.className = 'mt-4 rounded-xl p-3 text-xs bg-emerald-50 border border-emerald-200 text-emerald-700';
-  bar.innerHTML = `<span class="font-semibold">5 bandas cargadas</span> · Dimensiones: ${refW} × ${refH} px · Listo para identificar`;
+  bar.innerHTML = `<span class="font-semibold">5 bandas cargadas</span> · MS: ${refW}×${refH} px` +
+    (rgbDiff
+      ? ` · RGB: ${rgbDims.w}×${rgbDims.h} px <span class="text-emerald-500 font-medium">(se reescala automáticamente)</span>`
+      : '') +
+    ' · Listo para identificar';
   btn.disabled = false;
 }
 
@@ -254,18 +265,24 @@ async function preloadModels() {
 // ================================================================
 //  Convertir un archivo (TIF o JPG/PNG) → Float32Array [224x224]
 //  normalizado a [0,1] — replica load_image_robust() de Python
+//  channelId: 'rgb' extrae solo el canal azul (índice 2); otros canales → banda 0
 // ================================================================
-async function fileToFloat32(file) {
+async function fileToFloat32(file, channelId) {
   const isTif = /\.(tif|tiff)$/i.test(file.name);
+  const isRGB = channelId === 'rgb';
 
   if (isTif) {
     const buf    = await file.arrayBuffer();
     const tiff   = await GeoTIFF.fromArrayBuffer(buf);
     const image  = await tiff.getImage();
-    const rasters = await image.readRasters({ samples: [0] });
-    const raw    = rasters[0];   // TypedArray (Uint16, Uint8, Float32...)
     const srcW   = image.getWidth();
     const srcH   = image.getHeight();
+
+    // Para RGB: leer canal azul (muestra 2 si hay ≥3 bandas, si no muestra 0)
+    const numBands = image.getSamplesPerPixel();
+    const sampleIdx = (isRGB && numBands >= 3) ? 2 : 0;
+    const rasters = await image.readRasters({ samples: [sampleIdx] });
+    const raw    = rasters[0];   // TypedArray (Uint16, Uint8, Float32...)
 
     // Normalizar a [0, 1]
     let norm;
@@ -289,7 +306,6 @@ async function fileToFloat32(file) {
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
-        // Escalar directamente al tamaño de entrada
         const canvas = document.createElement('canvas');
         canvas.width  = INPUT_SIZE;
         canvas.height = INPUT_SIZE;
@@ -300,8 +316,13 @@ async function fileToFloat32(file) {
         const pixels = ctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE).data; // RGBA
         const result = new Float32Array(INPUT_SIZE * INPUT_SIZE);
         for (let i = 0; i < INPUT_SIZE * INPUT_SIZE; i++) {
-          // Promedio de canales RGB → grayscale (replica img.mean(axis=2) de Python)
-          result[i] = (pixels[i * 4] + pixels[i * 4 + 1] + pixels[i * 4 + 2]) / (3 * 255.0);
+          if (isRGB) {
+            // Extraer solo canal azul para alimentar la banda B del tensor
+            result[i] = pixels[i * 4 + 2] / 255.0;
+          } else {
+            // Bandas MS en JPG: promedio RGB → gris (replica img.mean(axis=2) de Python)
+            result[i] = (pixels[i * 4] + pixels[i * 4 + 1] + pixels[i * 4 + 2]) / (3 * 255.0);
+          }
         }
         resolve(result);
       };
@@ -357,7 +378,7 @@ async function runPrediction() {
     // ── Procesar las 5 bandas en paralelo ────────────────────
     text.textContent = 'Procesando bandas...';
     const channelArrays = await Promise.all(
-      CHANNELS.map(ch => fileToFloat32(state.files[ch.id]))
+      CHANNELS.map(ch => fileToFloat32(state.files[ch.id], ch.id))
     );
 
     // ── Construir tensor NHWC [1, 224, 224, 5] ───────────────
