@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderGrid();
   preloadModels();
   document.getElementById('btn-identify').addEventListener('click', runPrediction);
+  initMonitoreo();
 });
 
 // ================================================================
@@ -589,6 +590,269 @@ function showError(message) {
   sec.classList.remove('hidden');
 }
 
+// ================================================================
+//  MÓDULO MONITOREO
+// ================================================================
+
+const FENOLOGIA_PARAMS = [
+  { id: 'fruto',         label: 'Fruto',         emoji: '🍎' },
+  { id: 'hoja',          label: 'Hoja',          emoji: '🍃' },
+  { id: 'boton_floral',  label: 'Botón floral',  emoji: '🌸' },
+  { id: 'aborto_floral', label: 'Aborto floral', emoji: '🥀' },
+];
+
+const PHENO_VALS = [0, 25, 50, 75, 100];
+
+const monitorState = {
+  photos: [],   // [{ id, file, url, species, fenologia:{...} }]
+  nextId: 0,
+};
+
+// ── Tab switching ────────────────────────────────────────────
+function switchTab(tab) {
+  ['identificacion', 'monitoreo'].forEach(t => {
+    document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+    document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
+  });
+}
+
+// ── Init dropzone ────────────────────────────────────────────
+function initMonitoreo() {
+  const dropzone = document.getElementById('monitor-dropzone');
+  const input    = document.getElementById('monitor-input');
+  if (!dropzone || !input) return;
+
+  dropzone.addEventListener('click', () => input.click());
+  dropzone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropzone.classList.add('drag-over');
+  });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    addPhotos(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
+  });
+  input.addEventListener('change', e => {
+    addPhotos(Array.from(e.target.files));
+    input.value = '';
+  });
+}
+
+// ── Add photos batch ─────────────────────────────────────────
+function addPhotos(files) {
+  if (!files.length) return;
+  files.forEach(file => {
+    const id  = monitorState.nextId++;
+    const url = URL.createObjectURL(file);
+    monitorState.photos.push({
+      id, file, url,
+      species: '',
+      fenologia: Object.fromEntries(FENOLOGIA_PARAMS.map(p => [p.id, null])),
+    });
+    renderPhotoCard(monitorState.photos[monitorState.photos.length - 1]);
+  });
+  updateMonitorProgress();
+}
+
+// ── Render one photo card ────────────────────────────────────
+function renderPhotoCard(photo) {
+  const grid = document.getElementById('monitor-grid');
+
+  const shortName = photo.file.name.length > 24
+    ? photo.file.name.slice(0, 21) + '…'
+    : photo.file.name;
+
+  const speciesOpts = ['', ...CLASSES]
+    .map(s => `<option value="${s}">${s || '— Seleccionar especie —'}</option>`)
+    .join('');
+
+  const phenoRows = FENOLOGIA_PARAMS.map(p => `
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-stone-500 shrink-0" style="width:6rem">
+        ${p.emoji} ${p.label}
+      </span>
+      <div class="flex gap-1">
+        ${PHENO_VALS.map(v => `
+          <button class="pheno-btn"
+                  data-photo="${photo.id}"
+                  data-param="${p.id}"
+                  data-val="${v}">${v}</button>
+        `).join('')}
+      </div>
+    </div>`).join('');
+
+  const card = document.createElement('div');
+  card.id        = `monitor-card-${photo.id}`;
+  card.className = 'monitor-card bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden fade-in';
+  card.innerHTML = `
+    <!-- Foto -->
+    <div class="relative">
+      <img src="${photo.url}" alt="${photo.file.name}"
+           class="w-full object-cover bg-stone-100" style="height:160px">
+      <button onclick="removePhoto(${photo.id})"
+              title="Eliminar"
+              class="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 hover:bg-black/70
+                     text-white flex items-center justify-center text-base leading-none
+                     transition-colors" style="font-size:1rem; line-height:1">×</button>
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-3 py-2">
+        <span class="text-white text-xs font-medium block truncate">${shortName}</span>
+      </div>
+    </div>
+
+    <!-- Formulario de anotación -->
+    <div class="p-4 space-y-3">
+
+      <!-- Especie -->
+      <div>
+        <label class="text-xs font-semibold text-stone-400 uppercase tracking-wider">Especie</label>
+        <select class="species-select mt-1"
+                onchange="setSpecies(${photo.id}, this.value)">
+          ${speciesOpts}
+        </select>
+      </div>
+
+      <!-- Fenología -->
+      <div>
+        <label class="text-xs font-semibold text-stone-400 uppercase tracking-wider">Fenología · %</label>
+        <div class="mt-2 space-y-1.5">
+          ${phenoRows}
+        </div>
+      </div>
+
+      <!-- Estado -->
+      <div id="card-status-${photo.id}" class="text-xs text-stone-300 pt-0.5 border-t border-stone-100">
+        Pendiente de calificación
+      </div>
+    </div>`;
+
+  grid.appendChild(card);
+
+  // Vincular botones de fenología
+  card.querySelectorAll('.pheno-btn').forEach(btn => {
+    btn.addEventListener('click', () =>
+      setPhenology(parseInt(btn.dataset.photo), btn.dataset.param, parseInt(btn.dataset.val))
+    );
+  });
+}
+
+// ── Setters ──────────────────────────────────────────────────
+function setSpecies(photoId, species) {
+  const photo = monitorState.photos.find(p => p.id === photoId);
+  if (!photo) return;
+  photo.species = species;
+  updateCardStatus(photoId);
+  updateMonitorProgress();
+}
+
+function setPhenology(photoId, param, val) {
+  const photo = monitorState.photos.find(p => p.id === photoId);
+  if (!photo) return;
+  photo.fenologia[param] = val;
+
+  // Actualizar visual de botones del parámetro
+  const card = document.getElementById(`monitor-card-${photoId}`);
+  if (!card) return;
+  card.querySelectorAll(`.pheno-btn[data-param="${param}"]`).forEach(btn =>
+    btn.classList.toggle('selected', parseInt(btn.dataset.val) === val)
+  );
+
+  updateCardStatus(photoId);
+  updateMonitorProgress();
+}
+
+// ── Card status ──────────────────────────────────────────────
+function isPhotoComplete(photo) {
+  return photo.species !== '' &&
+    FENOLOGIA_PARAMS.every(p => photo.fenologia[p.id] !== null);
+}
+
+function updateCardStatus(photoId) {
+  const photo = monitorState.photos.find(p => p.id === photoId);
+  const el    = document.getElementById(`card-status-${photoId}`);
+  const card  = document.getElementById(`monitor-card-${photoId}`);
+  if (!photo || !el) return;
+
+  const complete = isPhotoComplete(photo);
+  card.classList.toggle('completed', complete);
+
+  if (complete) {
+    el.className   = 'text-xs font-semibold text-emerald-600 pt-0.5 border-t border-stone-100';
+    el.textContent = '✓ Calificación completa';
+  } else {
+    el.className = 'text-xs text-stone-400 pt-0.5 border-t border-stone-100';
+    const pending = [];
+    if (!photo.species) pending.push('especie');
+    FENOLOGIA_PARAMS.forEach(p => {
+      if (photo.fenologia[p.id] === null) pending.push(p.label.toLowerCase());
+    });
+    el.textContent = `Pendiente: ${pending.join(', ')}`;
+  }
+}
+
+// ── Progress bar ─────────────────────────────────────────────
+function updateMonitorProgress() {
+  const total  = monitorState.photos.length;
+  const done   = monitorState.photos.filter(isPhotoComplete).length;
+  const secEl  = document.getElementById('monitor-progress-section');
+  const textEl = document.getElementById('monitor-progress-text');
+  const fillEl = document.getElementById('monitor-progress-fill');
+  if (!secEl) return;
+
+  secEl.classList.toggle('hidden', total === 0);
+  if (total === 0) return;
+  textEl.textContent = `${done} de ${total} ${total === 1 ? 'foto calificada' : 'fotos calificadas'}`;
+  fillEl.style.width = `${(done / total) * 100}%`;
+}
+
+// ── Remove / Clear ───────────────────────────────────────────
+function removePhoto(photoId) {
+  const idx = monitorState.photos.findIndex(p => p.id === photoId);
+  if (idx !== -1) {
+    URL.revokeObjectURL(monitorState.photos[idx].url);
+    monitorState.photos.splice(idx, 1);
+  }
+  document.getElementById(`monitor-card-${photoId}`)?.remove();
+  updateMonitorProgress();
+}
+
+function clearMonitor() {
+  if (!confirm('¿Limpiar todas las fotos y calificaciones?')) return;
+  monitorState.photos.forEach(p => URL.revokeObjectURL(p.url));
+  monitorState.photos = [];
+  monitorState.nextId = 0;
+  document.getElementById('monitor-grid').innerHTML = '';
+  updateMonitorProgress();
+}
+
+// ── Export CSV ───────────────────────────────────────────────
+function exportCSV() {
+  if (!monitorState.photos.length) return;
+
+  const headers = ['archivo', 'especie', ...FENOLOGIA_PARAMS.map(p => p.id)];
+  const rows    = monitorState.photos.map(p => [
+    p.file.name,
+    p.species || '',
+    ...FENOLOGIA_PARAMS.map(fp => p.fenologia[fp.id] ?? ''),
+  ]);
+
+  const esc = v => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\r\n');
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `monitoreo_fenologia_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ================================================================
+//  IDENTIFICACIÓN — Reset
+// ================================================================
 function resetAll() {
   state.files = {};
   state.dims  = {};
