@@ -212,9 +212,31 @@
           <h2 class="text-sm font-semibold text-stone-700">Carga las fotografías del árbol</h2>
         </div>
         <p class="text-xs text-stone-400 mb-4">
-          Puedes subir varias fotos a la vez arrastrándolas o seleccionándolas.
-          Para cada foto podrás indicar la especie y calificar su fenología.
+          Carga individual o por lote. En modo lote, la especie y la fecha se pre-rellenan para todas las fotos.
         </p>
+
+        <!-- Cabecera de sesión -->
+        <div id="monitor-session-header" class="monitor-session-header mb-4">
+          <div class="session-field">
+            <label>Modo de carga</label>
+            <div class="mode-toggle">
+              <button id="btn-mode-individual" class="mode-btn active" onclick="setMode('individual')">Individual</button>
+              <button id="btn-mode-lote" class="mode-btn" onclick="setMode('lote')">Por lote</button>
+            </div>
+          </div>
+
+          <div class="session-field">
+            <label>Fecha de campo</label>
+            <input type="date" id="session-date" onchange="setSessionDate(this.value)">
+          </div>
+
+          <div id="session-species-wrap" class="session-field hidden">
+            <label>Especie del lote</label>
+            <select id="session-species" onchange="setSessionSpecies(this.value)">
+              <option value="">— Seleccionar especie —</option>
+            </select>
+          </div>
+        </div>
 
         <div id="monitor-dropzone" class="batch-dropzone">
           <input type="file" id="monitor-input" multiple accept="image/*" style="display:none">
