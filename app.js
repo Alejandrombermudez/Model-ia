@@ -608,11 +608,13 @@ function todayISO() {
 }
 
 const monitorState = {
-  photos: [],   // [{ id, file, url, fecha, species, fenologia:{...} }]
+  photos: [],   // [{ id, batchId, file, url, fecha, species, fenologia:{...} }]
   nextId: 0,
+  batchCount: 0,
   mode: 'individual',   // 'individual' | 'lote'
   sessionDate: todayISO(),
   sessionSpecies: '',
+  sessionFenologia: Object.fromEntries(['fruto','hoja','boton_floral','aborto_floral'].map(k => [k, null])),
 };
 
 // ── Tab switching ────────────────────────────────────────────
@@ -644,6 +646,29 @@ function initMonitoreo() {
     });
   }
 
+  // Generar botones de fenología de sesión
+  const phenoRows = document.getElementById('session-pheno-rows');
+  if (phenoRows) {
+    FENOLOGIA_PARAMS.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'session-pheno-row';
+      row.innerHTML = `
+        <span class="text-xs text-stone-500 shrink-0" style="width:6.5rem">${p.emoji} ${p.label}</span>
+        <div class="flex gap-1">
+          ${PHENO_VALS.map(v => `
+            <button class="session-pheno-btn"
+                    data-param="${p.id}"
+                    data-val="${v}">${v}</button>
+          `).join('')}
+        </div>`;
+      phenoRows.appendChild(row);
+    });
+    phenoRows.addEventListener('click', e => {
+      const btn = e.target.closest('.session-pheno-btn');
+      if (btn) setSessionFenology(btn.dataset.param, parseInt(btn.dataset.val));
+    });
+  }
+
   dropzone.addEventListener('click', () => input.click());
   dropzone.addEventListener('dragover', e => {
     e.preventDefault();
@@ -669,10 +694,14 @@ function addPhotos(files) {
     const id  = monitorState.nextId++;
     const url = URL.createObjectURL(file);
     monitorState.photos.push({
-      id, file, url,
+      id,
+      batchId: monitorState.batchCount,
+      file, url,
       fecha:   monitorState.sessionDate,
       species: isLote ? monitorState.sessionSpecies : '',
-      fenologia: Object.fromEntries(FENOLOGIA_PARAMS.map(p => [p.id, null])),
+      fenologia: Object.fromEntries(
+        FENOLOGIA_PARAMS.map(p => [p.id, isLote ? monitorState.sessionFenologia[p.id] : null])
+      ),
     });
     renderPhotoCard(monitorState.photos[monitorState.photos.length - 1]);
   });
@@ -698,7 +727,7 @@ function renderPhotoCard(photo) {
       </span>
       <div class="flex gap-1">
         ${PHENO_VALS.map(v => `
-          <button class="pheno-btn"
+          <button class="pheno-btn${photo.fenologia[p.id] === v ? ' selected' : ''}"
                   data-photo="${photo.id}"
                   data-param="${p.id}"
                   data-val="${v}">${v}</button>
@@ -774,6 +803,8 @@ function setMode(mode) {
   document.getElementById('btn-mode-individual').classList.toggle('active', mode === 'individual');
   document.getElementById('btn-mode-lote').classList.toggle('active', mode === 'lote');
   document.getElementById('session-species-wrap').classList.toggle('hidden', mode === 'individual');
+  document.getElementById('session-pheno-wrap').classList.toggle('hidden', mode === 'individual');
+  updateMonitorProgress();
 }
 
 function setSessionDate(val) {
@@ -782,6 +813,13 @@ function setSessionDate(val) {
 
 function setSessionSpecies(val) {
   monitorState.sessionSpecies = val;
+}
+
+function setSessionFenology(param, val) {
+  monitorState.sessionFenologia[param] = val;
+  document.getElementById('session-pheno-rows')
+    ?.querySelectorAll(`.session-pheno-btn[data-param="${param}"]`)
+    .forEach(btn => btn.classList.toggle('selected', parseInt(btn.dataset.val) === val));
 }
 
 function setCardDate(photoId, val) {
@@ -858,9 +896,14 @@ function updateMonitorProgress() {
   if (!secEl) return;
 
   secEl.classList.toggle('hidden', total === 0);
-  if (total === 0) return;
-  textEl.textContent = `${done} de ${total} ${total === 1 ? 'foto calificada' : 'fotos calificadas'}`;
-  fillEl.style.width = `${(done / total) * 100}%`;
+  if (total > 0) {
+    textEl.textContent = `${done} de ${total} ${total === 1 ? 'foto calificada' : 'fotos calificadas'}`;
+    fillEl.style.width = `${(done / total) * 100}%`;
+  }
+
+  const hasCurrentBatch = monitorState.photos.some(p => p.batchId === monitorState.batchCount);
+  document.getElementById('save-batch-wrap')
+    ?.classList.toggle('hidden', monitorState.mode !== 'lote' || !hasCurrentBatch);
 }
 
 // ── Remove / Clear ───────────────────────────────────────────
@@ -874,12 +917,55 @@ function removePhoto(photoId) {
   updateMonitorProgress();
 }
 
+function saveBatch() {
+  const currentPhotos = monitorState.photos.filter(p => p.batchId === monitorState.batchCount);
+  if (!currentPhotos.length) return;
+
+  const num   = monitorState.batchCount + 1;
+  const fecha = monitorState.sessionDate || '—';
+  const spec  = monitorState.sessionSpecies || '—';
+  const count = currentPhotos.length;
+
+  const grid = document.getElementById('monitor-grid');
+  const div  = document.createElement('div');
+  div.className = 'batch-divider';
+  div.innerHTML = `
+    <span style="opacity:0.55;font-weight:700">Lote ${num}</span>
+    <span style="opacity:0.35">·</span>
+    <span>${fecha}</span>
+    <span style="opacity:0.35">·</span>
+    <span>${spec}</span>
+    <span style="opacity:0.35">·</span>
+    <span>${count} ${count === 1 ? 'foto' : 'fotos'}</span>`;
+  grid.appendChild(div);
+
+  monitorState.batchCount++;
+  monitorState.sessionDate    = todayISO();
+  monitorState.sessionSpecies = '';
+  FENOLOGIA_PARAMS.forEach(p => { monitorState.sessionFenologia[p.id] = null; });
+
+  const dateEl = document.getElementById('session-date');
+  if (dateEl) dateEl.value = monitorState.sessionDate;
+  const specEl = document.getElementById('session-species');
+  if (specEl) specEl.value = '';
+  document.getElementById('session-pheno-rows')
+    ?.querySelectorAll('.session-pheno-btn')
+    .forEach(btn => btn.classList.remove('selected'));
+
+  updateMonitorProgress();
+}
+
 function clearMonitor() {
   if (!confirm('¿Limpiar todas las fotos y calificaciones?')) return;
   monitorState.photos.forEach(p => URL.revokeObjectURL(p.url));
-  monitorState.photos = [];
-  monitorState.nextId = 0;
+  monitorState.photos    = [];
+  monitorState.nextId    = 0;
+  monitorState.batchCount = 0;
+  FENOLOGIA_PARAMS.forEach(p => { monitorState.sessionFenologia[p.id] = null; });
   document.getElementById('monitor-grid').innerHTML = '';
+  document.getElementById('session-pheno-rows')
+    ?.querySelectorAll('.session-pheno-btn')
+    .forEach(btn => btn.classList.remove('selected'));
   updateMonitorProgress();
 }
 

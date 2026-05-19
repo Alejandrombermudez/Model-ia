@@ -414,3 +414,60 @@
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(13,115,119,0.08);
 }
+
+/* ─── Session phenology grid ──────────────────────────────── */
+.session-pheno-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.session-pheno-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-pheno-btn {
+  padding: 3px 7px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1.5px solid #e7e5e4;
+  color: #a8a29e;
+  background: white;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  min-width: 2rem;
+  line-height: 1.4;
+}
+
+.session-pheno-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-50);
+}
+
+.session-pheno-btn.selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+/* ─── Batch divider ───────────────────────────────────────── */
+.batch-divider {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--primary-50);
+  border: 1px solid var(--primary-100);
+  border-left: 3px solid var(--primary);
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
