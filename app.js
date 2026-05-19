@@ -603,9 +603,16 @@ const FENOLOGIA_PARAMS = [
 
 const PHENO_VALS = [0, 25, 50, 75, 100];
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 const monitorState = {
-  photos: [],   // [{ id, file, url, species, fenologia:{...} }]
+  photos: [],   // [{ id, file, url, fecha, species, fenologia:{...} }]
   nextId: 0,
+  mode: 'individual',   // 'individual' | 'lote'
+  sessionDate: todayISO(),
+  sessionSpecies: '',
 };
 
 // ── Tab switching ────────────────────────────────────────────
@@ -621,6 +628,21 @@ function initMonitoreo() {
   const dropzone = document.getElementById('monitor-dropzone');
   const input    = document.getElementById('monitor-input');
   if (!dropzone || !input) return;
+
+  // Inicializar fecha de sesión con hoy
+  const dateInput = document.getElementById('session-date');
+  if (dateInput) dateInput.value = monitorState.sessionDate;
+
+  // Poblar opciones de especie en el selector de lote
+  const sessionSpeciesEl = document.getElementById('session-species');
+  if (sessionSpeciesEl) {
+    CLASSES.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      sessionSpeciesEl.appendChild(opt);
+    });
+  }
 
   dropzone.addEventListener('click', () => input.click());
   dropzone.addEventListener('dragover', e => {
@@ -642,12 +664,14 @@ function initMonitoreo() {
 // ── Add photos batch ─────────────────────────────────────────
 function addPhotos(files) {
   if (!files.length) return;
+  const isLote = monitorState.mode === 'lote';
   files.forEach(file => {
     const id  = monitorState.nextId++;
     const url = URL.createObjectURL(file);
     monitorState.photos.push({
       id, file, url,
-      species: '',
+      fecha:   monitorState.sessionDate,
+      species: isLote ? monitorState.sessionSpecies : '',
       fenologia: Object.fromEntries(FENOLOGIA_PARAMS.map(p => [p.id, null])),
     });
     renderPhotoCard(monitorState.photos[monitorState.photos.length - 1]);
@@ -664,7 +688,7 @@ function renderPhotoCard(photo) {
     : photo.file.name;
 
   const speciesOpts = ['', ...CLASSES]
-    .map(s => `<option value="${s}">${s || '— Seleccionar especie —'}</option>`)
+    .map(s => `<option value="${s}"${s === photo.species ? ' selected' : ''}>${s || '— Seleccionar especie —'}</option>`)
     .join('');
 
   const phenoRows = FENOLOGIA_PARAMS.map(p => `
@@ -703,6 +727,14 @@ function renderPhotoCard(photo) {
     <!-- Formulario de anotación -->
     <div class="p-4 space-y-3">
 
+      <!-- Fecha -->
+      <div>
+        <label class="text-xs font-semibold text-stone-400 uppercase tracking-wider">Fecha</label>
+        <input type="date" class="card-date mt-1"
+               value="${photo.fecha}"
+               onchange="setCardDate(${photo.id}, this.value)">
+      </div>
+
       <!-- Especie -->
       <div>
         <label class="text-xs font-semibold text-stone-400 uppercase tracking-wider">Especie</label>
@@ -736,6 +768,30 @@ function renderPhotoCard(photo) {
   });
 }
 
+// ── Session controls ─────────────────────────────────────────
+function setMode(mode) {
+  monitorState.mode = mode;
+  document.getElementById('btn-mode-individual').classList.toggle('active', mode === 'individual');
+  document.getElementById('btn-mode-lote').classList.toggle('active', mode === 'lote');
+  document.getElementById('session-species-wrap').classList.toggle('hidden', mode === 'individual');
+}
+
+function setSessionDate(val) {
+  monitorState.sessionDate = val;
+}
+
+function setSessionSpecies(val) {
+  monitorState.sessionSpecies = val;
+}
+
+function setCardDate(photoId, val) {
+  const photo = monitorState.photos.find(p => p.id === photoId);
+  if (!photo) return;
+  photo.fecha = val;
+  updateCardStatus(photoId);
+  updateMonitorProgress();
+}
+
 // ── Setters ──────────────────────────────────────────────────
 function setSpecies(photoId, species) {
   const photo = monitorState.photos.find(p => p.id === photoId);
@@ -763,7 +819,8 @@ function setPhenology(photoId, param, val) {
 
 // ── Card status ──────────────────────────────────────────────
 function isPhotoComplete(photo) {
-  return photo.species !== '' &&
+  return photo.fecha !== '' &&
+    photo.species !== '' &&
     FENOLOGIA_PARAMS.every(p => photo.fenologia[p.id] !== null);
 }
 
@@ -782,6 +839,7 @@ function updateCardStatus(photoId) {
   } else {
     el.className = 'text-xs text-stone-400 pt-0.5 border-t border-stone-100';
     const pending = [];
+    if (!photo.fecha) pending.push('fecha');
     if (!photo.species) pending.push('especie');
     FENOLOGIA_PARAMS.forEach(p => {
       if (photo.fenologia[p.id] === null) pending.push(p.label.toLowerCase());
@@ -829,8 +887,9 @@ function clearMonitor() {
 function exportCSV() {
   if (!monitorState.photos.length) return;
 
-  const headers = ['archivo', 'especie', ...FENOLOGIA_PARAMS.map(p => p.id)];
+  const headers = ['fecha', 'archivo', 'especie', ...FENOLOGIA_PARAMS.map(p => p.id)];
   const rows    = monitorState.photos.map(p => [
+    p.fecha || '',
     p.file.name,
     p.species || '',
     ...FENOLOGIA_PARAMS.map(fp => p.fenologia[fp.id] ?? ''),
