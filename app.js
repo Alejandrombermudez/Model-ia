@@ -607,6 +607,8 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+let monitorChart = null;
+
 const monitorState = {
   photos: [],   // [{ id, batchId, file, url, fecha, species, fenologia:{...} }]
   nextId: 0,
@@ -927,6 +929,8 @@ function updateMonitorProgress() {
   const hasCurrentBatch = monitorState.photos.some(p => p.batchId === monitorState.batchCount);
   document.getElementById('save-batch-wrap')
     ?.classList.toggle('hidden', monitorState.mode !== 'lote' || !hasCurrentBatch);
+
+  renderMonitorChart();
 }
 
 // ── Remove / Clear ───────────────────────────────────────────
@@ -989,7 +993,108 @@ function clearMonitor() {
   document.getElementById('session-pheno-rows')
     ?.querySelectorAll('.session-pheno-btn')
     .forEach(btn => btn.classList.remove('selected'));
+  if (monitorChart) { monitorChart.destroy(); monitorChart = null; }
   updateMonitorProgress();
+}
+
+// ── Chart ─────────────────────────────────────────────────────
+const PARAM_COLORS = {
+  fruto:         '#f97316',
+  hoja:          '#22c55e',
+  boton_floral:  '#ec4899',
+  aborto_floral: '#ef4444',
+};
+
+function buildChartData() {
+  const selectedSpecies = document.getElementById('chart-species-filter')?.value || '';
+  const completed = monitorState.photos.filter(isPhotoComplete);
+  const filtered  = selectedSpecies ? completed.filter(p => p.species === selectedSpecies) : completed;
+  if (!filtered.length) return null;
+
+  const dates = [...new Set(filtered.map(p => p.fecha))].sort();
+
+  // Agrupar: param → fecha → [valores]
+  const agg = Object.fromEntries(FENOLOGIA_PARAMS.map(fp => [fp.id, {}]));
+  filtered.forEach(p => {
+    FENOLOGIA_PARAMS.forEach(fp => {
+      if (!agg[fp.id][p.fecha]) agg[fp.id][p.fecha] = [];
+      if (p.fenologia[fp.id] !== null) agg[fp.id][p.fecha].push(p.fenologia[fp.id]);
+    });
+  });
+
+  const avg = arr => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+
+  const datasets = FENOLOGIA_PARAMS.map(fp => ({
+    label:            `${fp.emoji} ${fp.label}`,
+    data:             dates.map(d => avg(agg[fp.id][d] || [])),
+    borderColor:      PARAM_COLORS[fp.id],
+    backgroundColor:  PARAM_COLORS[fp.id] + '22',
+    tension:          0.3,
+    spanGaps:         true,
+    pointRadius:      5,
+    pointHoverRadius: 7,
+    borderWidth:      2,
+  }));
+
+  return { labels: dates, datasets };
+}
+
+function renderMonitorChart() {
+  const section   = document.getElementById('monitor-chart-section');
+  const completed = monitorState.photos.filter(isPhotoComplete);
+
+  if (!completed.length) {
+    section?.classList.add('hidden');
+    if (monitorChart) { monitorChart.destroy(); monitorChart = null; }
+    return;
+  }
+  section?.classList.remove('hidden');
+
+  // Actualizar selector de especies
+  const filterEl = document.getElementById('chart-species-filter');
+  if (filterEl) {
+    const prev    = filterEl.value;
+    const species = [...new Set(completed.map(p => p.species))].sort();
+    filterEl.innerHTML = '<option value="">Todas las especies</option>' +
+      species.map(s => `<option value="${s}"${s === prev ? ' selected' : ''}>${s}</option>`).join('');
+  }
+
+  const data = buildChartData();
+  if (!data) return;
+
+  const canvas = document.getElementById('monitor-chart');
+  if (!canvas) return;
+
+  if (monitorChart) {
+    monitorChart.data = data;
+    monitorChart.update('active');
+  } else {
+    monitorChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          y: {
+            min: 0, max: 100,
+            ticks: { callback: v => v + '%', stepSize: 25 },
+            grid:  { color: '#f5f5f4' },
+          },
+          x: { grid: { color: '#f5f5f4' }, ticks: { maxTicksLimit: 12 } },
+        },
+        plugins: {
+          legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw + '%' : '—'}`,
+            },
+          },
+        },
+      },
+    });
+  }
 }
 
 // ── Export CSV ───────────────────────────────────────────────
@@ -1012,6 +1117,83 @@ function exportCSV() {
   const a    = document.createElement('a');
   a.href     = url;
   a.download = `monitoreo_fenologia_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── Export XLSX (con gráfica embebida) ───────────────────────
+async function exportXLSX() {
+  if (!monitorState.photos.length) return;
+
+  // Fallback a CSV si ExcelJS no cargó
+  if (typeof ExcelJS === 'undefined') { exportCSV(); return; }
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Amazonia Emprende · Módulo RAS';
+  wb.created = new Date();
+
+  // ── Hoja 1: Datos ─────────────────────────────────────────
+  const ws = wb.addWorksheet('Datos');
+  ws.columns = [
+    { header: 'fecha',         key: 'fecha',         width: 12 },
+    { header: 'archivo',       key: 'archivo',       width: 44 },
+    { header: 'especie',       key: 'especie',       width: 20 },
+    { header: 'fruto',         key: 'fruto',         width: 8  },
+    { header: 'hoja',          key: 'hoja',          width: 8  },
+    { header: 'boton_floral',  key: 'boton_floral',  width: 14 },
+    { header: 'aborto_floral', key: 'aborto_floral', width: 14 },
+  ];
+
+  const headerRow = ws.getRow(1);
+  headerRow.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+  headerRow.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D7377' } };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.height    = 22;
+
+  monitorState.photos.forEach((p, i) => {
+    const row = ws.addRow({
+      fecha:         p.fecha         || '',
+      archivo:       p.file.name,
+      especie:       p.species       || '',
+      fruto:         p.fenologia.fruto         ?? '',
+      hoja:          p.fenologia.hoja          ?? '',
+      boton_floral:  p.fenologia.boton_floral  ?? '',
+      aborto_floral: p.fenologia.aborto_floral ?? '',
+    });
+    if (i % 2 === 0) {
+      row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F7F6' } };
+    }
+    row.alignment = { vertical: 'middle' };
+    ['fruto','hoja','boton_floral','aborto_floral'].forEach(k => {
+      row.getCell(k).alignment = { horizontal: 'center' };
+    });
+  });
+
+  const thinBorder = { style: 'thin', color: { argb: 'FFE7E5E4' } };
+  ws.eachRow(row => row.eachCell(cell => {
+    cell.border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+  }));
+
+  // ── Hoja 2: Gráfica ───────────────────────────────────────
+  const canvas = document.getElementById('monitor-chart');
+  if (canvas && monitorChart) {
+    const ws2   = wb.addWorksheet('Gráfica');
+    const b64   = canvas.toDataURL('image/png').split(',')[1];
+    const imgId = wb.addImage({ base64: b64, extension: 'png' });
+    ws2.addImage(imgId, { tl: { col: 0, row: 0 }, ext: { width: 900, height: 450 } });
+  }
+
+  // ── Descarga ──────────────────────────────────────────────
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob   = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = `monitoreo_fenologia_${todayISO()}.xlsx`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

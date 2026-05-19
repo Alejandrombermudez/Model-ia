@@ -288,7 +288,7 @@
               class="text-xs text-stone-400 hover:text-red-500 font-medium transition-colors">
               Limpiar todo
             </button>
-            <button onclick="exportCSV()"
+            <button onclick="exportXLSX()"
               class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg
                      text-white transition-colors"
               style="background:var(--primary)"
@@ -299,13 +299,30 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
               </svg>
-              Exportar CSV
+              Exportar Excel
             </button>
           </div>
         </div>
         <div class="monitor-progress-track">
           <div class="monitor-progress-fill" id="monitor-progress-fill" style="width:0%"></div>
         </div>
+      </div>
+
+      <!-- Gráfica de fenología en el tiempo -->
+      <div id="monitor-chart-section" class="hidden bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="step-badge">GRÁFICA</span>
+            <h2 class="text-sm font-semibold text-stone-700">Fenología en el tiempo</h2>
+          </div>
+          <select id="chart-species-filter"
+                  class="species-select"
+                  style="width:auto;min-width:160px"
+                  onchange="renderMonitorChart()">
+            <option value="">Todas las especies</option>
+          </select>
+        </div>
+        <canvas id="monitor-chart" style="max-height:320px"></canvas>
       </div>
 
       <!-- Grid de fotos anotadas -->
@@ -323,6 +340,8 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/geotiff@2.0.7/dist-browser/geotiff.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/ort.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
   <script src="app.js"></script>
 
 </body>
