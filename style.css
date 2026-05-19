@@ -415,6 +415,19 @@
   box-shadow: 0 0 0 3px rgba(13,115,119,0.08);
 }
 
+/* ─── Lote validation message ─────────────────────────────── */
+.lote-validation-msg {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-left: 3px solid #f97316;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9a3412;
+  margin-bottom: 0.75rem;
+}
+
 /* ─── Session phenology grid ──────────────────────────────── */
 .session-pheno-grid {
   display: flex;

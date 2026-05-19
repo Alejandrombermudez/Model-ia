@@ -687,9 +687,32 @@ function initMonitoreo() {
 }
 
 // ── Add photos batch ─────────────────────────────────────────
+function showLoteValidationMsg(msg) {
+  const el = document.getElementById('lote-validation-msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => el.classList.add('hidden'), 4000);
+}
+
 function addPhotos(files) {
   if (!files.length) return;
   const isLote = monitorState.mode === 'lote';
+
+  if (isLote) {
+    const missing = [];
+    if (!monitorState.sessionSpecies) missing.push('especie');
+    FENOLOGIA_PARAMS.forEach(p => {
+      if (monitorState.sessionFenologia[p.id] === null) missing.push(p.label.toLowerCase());
+    });
+    if (missing.length) {
+      showLoteValidationMsg(`Completa antes de cargar: ${missing.join(', ')}`);
+      return;
+    }
+    document.getElementById('lote-validation-msg')?.classList.add('hidden');
+  }
+
   files.forEach(file => {
     const id  = monitorState.nextId++;
     const url = URL.createObjectURL(file);
