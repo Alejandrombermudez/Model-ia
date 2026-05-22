@@ -595,10 +595,11 @@ function showError(message) {
 // ================================================================
 
 const FENOLOGIA_PARAMS = [
-  { id: 'fruto',         label: 'Fruto',         emoji: '🍎' },
-  { id: 'hoja',          label: 'Hoja',          emoji: '🍃' },
-  { id: 'boton_floral',  label: 'Botón floral',  emoji: '🌸' },
-  { id: 'aborto_floral', label: 'Aborto floral', emoji: '🥀' },
+  { id: 'hoja',           label: 'Hoja',           emoji: '🍃', header: 'HOJA'        },
+  { id: 'boton',          label: 'Botón',          emoji: '🌱', header: 'BOTÓN'       },
+  { id: 'flor',           label: 'Flor',           emoji: '🌸', header: 'FLOR'        },
+  { id: 'fruto_inmaduro', label: 'Fruto inmaduro', emoji: '🍏', header: 'FRUTO INM.'  },
+  { id: 'fruto_maduro',   label: 'Fruto maduro',   emoji: '🍎', header: 'FRUTO MAD.'  },
 ];
 
 const PHENO_VALS = [0, 25, 50, 75, 100];
@@ -616,7 +617,7 @@ const monitorState = {
   mode: 'individual',   // 'individual' | 'lote'
   sessionDate: todayISO(),
   sessionSpecies: '',
-  sessionFenologia: Object.fromEntries(['fruto','hoja','boton_floral','aborto_floral'].map(k => [k, null])),
+  sessionFenologia: Object.fromEntries(FENOLOGIA_PARAMS.map(p => [p.id, null])),
 };
 
 // ── Tab switching ────────────────────────────────────────────
@@ -999,10 +1000,11 @@ function clearMonitor() {
 
 // ── Chart ─────────────────────────────────────────────────────
 const PARAM_COLORS = {
-  fruto:         '#f97316',
-  hoja:          '#22c55e',
-  boton_floral:  '#ec4899',
-  aborto_floral: '#ef4444',
+  hoja:           '#386641',
+  boton:          '#74c69d',
+  flor:           '#e63946',
+  fruto_inmaduro: '#f4a261',
+  fruto_maduro:   '#bc6c25',
 };
 
 function buildChartData() {
@@ -1010,6 +1012,10 @@ function buildChartData() {
   const completed = monitorState.photos.filter(isPhotoComplete);
   const filtered  = selectedSpecies ? completed.filter(p => p.species === selectedSpecies) : completed;
   if (!filtered.length) return null;
+
+  // Actualizar contador n
+  const nEl = document.getElementById('chart-n-count');
+  if (nEl) nEl.textContent = `n = ${filtered.length} observaciones`;
 
   const dates = [...new Set(filtered.map(p => p.fecha))].sort();
 
@@ -1025,14 +1031,15 @@ function buildChartData() {
   const avg = arr => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
 
   const datasets = FENOLOGIA_PARAMS.map(fp => ({
-    label:            `${fp.emoji} ${fp.label}`,
+    label:            fp.label,
     data:             dates.map(d => avg(agg[fp.id][d] || [])),
     borderColor:      PARAM_COLORS[fp.id],
-    backgroundColor:  PARAM_COLORS[fp.id] + '22',
-    tension:          0.3,
+    backgroundColor:  PARAM_COLORS[fp.id] + '18',
+    tension:          0.4,
     spanGaps:         true,
-    pointRadius:      5,
-    pointHoverRadius: 7,
+    pointRadius:      4,
+    pointHoverRadius: 6,
+    pointBackgroundColor: PARAM_COLORS[fp.id],
     borderWidth:      2,
   }));
 
@@ -1075,20 +1082,56 @@ function renderMonitorChart() {
       options: {
         responsive: true,
         maintainAspectRatio: true,
+        layout: { padding: { top: 4, right: 8 } },
         interaction: { mode: 'index', intersect: false },
         scales: {
           y: {
             min: 0, max: 100,
-            ticks: { callback: v => v + '%', stepSize: 25 },
-            grid:  { color: '#f5f5f4' },
+            border: { display: false },
+            grid:   { color: '#f0efee' },
+            ticks: {
+              callback: v => v + '%',
+              stepSize: 25,
+              font:  { size: 11 },
+              color: '#a8a29e',
+            },
           },
-          x: { grid: { color: '#f5f5f4' }, ticks: { maxTicksLimit: 12 } },
+          x: {
+            border: { display: false },
+            grid:   { display: false },
+            ticks: {
+              font:  { size: 11 },
+              color: '#a8a29e',
+              maxRotation: 0,
+              callback: function(val) {
+                const label = this.getLabelForValue(val);
+                if (!label) return '';
+                const d = new Date(label + 'T12:00:00');
+                return d.toLocaleDateString('es', { month: 'short' })
+                         .toUpperCase().replace('.', '');
+              },
+            },
+          },
         },
         plugins: {
-          legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 11 } } },
+          legend: {
+            position: 'top',
+            align:    'end',
+            labels: {
+              usePointStyle:   true,
+              pointStyleWidth: 8,
+              padding:         16,
+              font:  { size: 11 },
+              color: '#57534e',
+            },
+          },
           tooltip: {
+            backgroundColor: '#1c1917',
+            padding:         10,
+            titleFont: { size: 11 },
+            bodyFont:  { size: 11 },
             callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw + '%' : '—'}`,
+              label: ctx => `  ${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw + '%' : '—'}`,
             },
           },
         },
@@ -1137,44 +1180,48 @@ async function exportXLSX() {
   // ── Hoja 1: Datos ─────────────────────────────────────────
   const ws = wb.addWorksheet('Datos');
   ws.columns = [
-    { header: 'fecha',         key: 'fecha',         width: 12 },
-    { header: 'archivo',       key: 'archivo',       width: 44 },
-    { header: 'especie',       key: 'especie',       width: 20 },
-    { header: 'fruto',         key: 'fruto',         width: 8  },
-    { header: 'hoja',          key: 'hoja',          width: 8  },
-    { header: 'boton_floral',  key: 'boton_floral',  width: 14 },
-    { header: 'aborto_floral', key: 'aborto_floral', width: 14 },
+    { header: 'FECHA',   key: 'fecha',   width: 13 },
+    { header: 'ARCHIVO', key: 'archivo', width: 44 },
+    { header: 'ESPECIE', key: 'especie', width: 20 },
+    ...FENOLOGIA_PARAMS.map(p => ({ header: p.header, key: p.id, width: 13 })),
   ];
 
   const headerRow = ws.getRow(1);
-  headerRow.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
-  headerRow.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D7377' } };
+  headerRow.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10, name: 'Calibri' };
+  headerRow.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1C1917' } };
   headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-  headerRow.height    = 22;
+  headerRow.height    = 24;
 
   monitorState.photos.forEach((p, i) => {
-    const row = ws.addRow({
-      fecha:         p.fecha         || '',
-      archivo:       p.file.name,
-      especie:       p.species       || '',
-      fruto:         p.fenologia.fruto         ?? '',
-      hoja:          p.fenologia.hoja          ?? '',
-      boton_floral:  p.fenologia.boton_floral  ?? '',
-      aborto_floral: p.fenologia.aborto_floral ?? '',
-    });
-    if (i % 2 === 0) {
+    const rowData = {
+      fecha:   p.fecha   || '',
+      archivo: p.file.name,
+      especie: p.species || '',
+      ...Object.fromEntries(FENOLOGIA_PARAMS.map(fp => [fp.id, p.fenologia[fp.id] ?? ''])),
+    };
+    const row = ws.addRow(rowData);
+    if (i % 2 !== 0) {
       row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F7F6' } };
     }
+    row.height    = 18;
     row.alignment = { vertical: 'middle' };
-    ['fruto','hoja','boton_floral','aborto_floral'].forEach(k => {
-      row.getCell(k).alignment = { horizontal: 'center' };
+    FENOLOGIA_PARAMS.forEach(fp => {
+      row.getCell(fp.id).alignment = { horizontal: 'center' };
     });
   });
 
+  // Fila de nota al pie
+  ws.addRow([]);
+  const noteRow = ws.addRow(['Una fila por fotografía calificada']);
+  noteRow.getCell(1).font = { italic: true, color: { argb: 'FFA8A29E' }, size: 9 };
+
   const thinBorder = { style: 'thin', color: { argb: 'FFE7E5E4' } };
-  ws.eachRow(row => row.eachCell(cell => {
-    cell.border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
-  }));
+  ws.eachRow((row, rn) => {
+    if (rn > monitorState.photos.length + 1) return; // no bordes en nota al pie
+    row.eachCell(cell => {
+      cell.border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+    });
+  });
 
   // ── Hoja 2: Gráfica ───────────────────────────────────────
   const canvas = document.getElementById('monitor-chart');

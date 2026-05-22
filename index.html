@@ -309,20 +309,23 @@
       </div>
 
       <!-- Gráfica de fenología en el tiempo -->
-      <div id="monitor-chart-section" class="hidden bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <span class="step-badge">GRÁFICA</span>
-            <h2 class="text-sm font-semibold text-stone-700">Fenología en el tiempo</h2>
+      <div id="monitor-chart-section" class="hidden bg-white rounded-2xl border border-stone-200 shadow-sm px-6 pt-6 pb-5">
+        <h2 class="text-base font-semibold text-stone-800 mb-4" style="letter-spacing:-0.01em">
+          Fenología en el tiempo
+        </h2>
+        <canvas id="monitor-chart" style="max-height:300px"></canvas>
+        <div class="flex items-center justify-between mt-3">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs text-stone-400">Filtro de especie:</span>
+            <select id="chart-species-filter"
+                    class="species-select"
+                    style="width:auto;min-width:140px;font-size:0.72rem;padding:3px 7px"
+                    onchange="renderMonitorChart()">
+              <option value="">Todas las especies</option>
+            </select>
           </div>
-          <select id="chart-species-filter"
-                  class="species-select"
-                  style="width:auto;min-width:160px"
-                  onchange="renderMonitorChart()">
-            <option value="">Todas las especies</option>
-          </select>
+          <span class="text-xs text-stone-400" id="chart-n-count"></span>
         </div>
-        <canvas id="monitor-chart" style="max-height:320px"></canvas>
       </div>
 
       <!-- Grid de fotos anotadas -->
