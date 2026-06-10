@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Amazonía Emprende · Informe BIC 2025</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#0d7377',
+              light:   '#14b8a6',
+              dark:    '#0a5c5f',
+              50:      '#f0fdfa',
+              100:     '#ccfbf1',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="font-sans antialiased min-h-screen bg-gradient-to-br from-stone-50 via-primary-50 to-stone-100">
+
+  <!-- ── HEADER ─────────────────────────────────────────────── -->
+  <header class="bg-white shadow-md border-b border-stone-200 sticky top-0 z-20">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
+
+      <!-- Logo / marca -->
+      <div class="flex items-center gap-3 flex-1">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+             style="background:#0d7377">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+            <path d="M2 21c0-3 1.85-5.36 5.08-6"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-stone-800 leading-tight">Amazonía Emprende</h1>
+          <p class="text-xs text-stone-400 hidden sm:block">Restauración de ecosistemas · Amazonía colombiana</p>
+        </div>
+      </div>
+
+      <!-- Volver al módulo -->
+      <a href="index.html"
+         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-50 border border-primary-100
+                text-xs font-medium text-primary hover:bg-primary-100 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5m0 0l7 7m-7-7l7-7"/>
+        </svg>
+        Volver al módulo
+      </a>
+    </div>
+  </header>
+
+  <!-- ── MAIN ───────────────────────────────────────────────── -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
+
+    <!-- ── Presentación ──────────────────────────────────────── -->
+    <section class="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 sm:p-8">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="step-badge">QUIÉNES SOMOS</span>
+      </div>
+
+      <h2 class="text-xl sm:text-2xl font-bold text-stone-800 leading-tight mb-4"
+          style="letter-spacing:-0.01em">
+        Restauración de ecosistemas en la Amazonía colombiana
+      </h2>
+
+      <p class="text-sm sm:text-[0.95rem] leading-relaxed text-stone-600 max-w-3xl">
+        Amazonía Emprende es una organización pionera en la restauración de ecosistemas en la
+        Amazonía colombiana, cuyo modelo se fundamenta en principios científicos y en la
+        articulación con comunidades locales. Su propósito es generar impactos medibles en
+        biodiversidad y contribuir a procesos de descarbonización, asegurando diversidad genética
+        como base de resiliencia ecológica.
+      </p>
+
+      <!-- Pilares -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+        <div class="p-4 rounded-xl border border-stone-200 bg-stone-50">
+          <p class="text-sm font-semibold text-primary">Principios científicos</p>
+          <p class="text-xs text-stone-400 mt-1">Modelo de restauración basado en evidencia.</p>
+        </div>
+        <div class="p-4 rounded-xl border border-stone-200 bg-stone-50">
+          <p class="text-sm font-semibold text-primary">Comunidades locales</p>
+          <p class="text-xs text-stone-400 mt-1">Articulación territorial como eje del trabajo.</p>
+        </div>
+        <div class="p-4 rounded-xl border border-stone-200 bg-stone-50">
+          <p class="text-sm font-semibold text-primary">Biodiversidad &amp; carbono</p>
+          <p class="text-xs text-stone-400 mt-1">Impactos medibles y diversidad genética.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Informe BIC 2025 ──────────────────────────────────── -->
+    <section class="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-3 mb-5">
+        <div class="flex items-center gap-3 flex-1">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+               style="background:#0d7377">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0
+                       01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-stone-800 leading-tight">Informe BIC 2025</h2>
+            <p class="text-xs text-stone-400">Academia de Innovación para la Sostenibilidad SAS BIC</p>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex items-center gap-2">
+          <a href="informe-bic-2025.pdf" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs
+                    text-white transition-colors shadow-sm"
+             style="background:#0d7377"
+             onmouseover="this.style.background='#0a5c5f'"
+             onmouseout="this.style.background='#0d7377'">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+            Abrir
+          </a>
+          <a href="informe-bic-2025.pdf" download
+             class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs
+                    text-primary bg-primary-50 border border-primary-100 hover:bg-primary-100 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Descargar
+          </a>
+        </div>
+      </div>
+
+      <!-- Visor PDF -->
+      <div class="rounded-xl border border-stone-200 overflow-hidden bg-stone-100" style="height:80vh;min-height:480px">
+        <object data="informe-bic-2025.pdf" type="application/pdf" class="w-full h-full">
+          <iframe src="informe-bic-2025.pdf#view=FitH" class="w-full h-full" style="border:0"
+                  title="Informe BIC 2025 — Academia de Innovación para la Sostenibilidad SAS BIC">
+          </iframe>
+          <div class="p-6 text-center">
+            <p class="text-sm text-stone-500">
+              Tu navegador no puede mostrar el PDF aquí.
+              <a href="informe-bic-2025.pdf" target="_blank" rel="noopener"
+                 class="font-semibold text-primary underline">Ábrelo en una pestaña nueva</a>.
+            </p>
+          </div>
+        </object>
+      </div>
+
+      <p class="text-xs text-stone-400 mt-3 flex items-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        En dispositivos móviles usa el botón «Abrir» si el visor no carga.
+      </p>
+    </section>
+
+  </main>
+
+  <!-- ── FOOTER ─────────────────────────────────────────────── -->
+  <footer class="text-center text-stone-400 text-xs py-8">
+    © 2025 Amazonía Emprende · Restauración de ecosistemas en la Amazonía colombiana
+  </footer>
+
+</body>
+</html>
